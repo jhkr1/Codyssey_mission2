@@ -1,0 +1,67 @@
+{
+    "quizzes": [
+        {
+            "question": "파이썬의 창시자는 누구인가요?",
+            "choices": [
+                "귀도 반 로섬",
+                "리누스 토르발스",
+                "제임스 고슬링",
+                "브렌던 아이크"
+            ],
+            "answer": 1
+        },
+        {
+            "question": "파이썬에서 리스트를 만들 때 사용하는 기호는 무엇인가요?",
+            "choices": [
+                "()",
+                "{}",
+                "[]",
+                "<>"
+            ],
+            "answer": 3
+        },
+        {
+            "question": "조건이 참일 때만 코드를 실행할 때 사용하는 키워드는 무엇인가요?",
+            "choices": [
+                "for",
+                "while",
+                "if",
+                "def"
+            ],
+            "answer": 3
+        },
+        {
+            "question": "반복문으로 리스트의 모든 요소를 순회할 때 가장 자주 사용하는 문장은 무엇인가요?",
+            "choices": [
+                "if",
+                "for",
+                "class",
+                "import"
+            ],
+            "answer": 2
+        },
+        {
+            "question": "파이썬에서 함수를 정의할 때 사용하는 키워드는 무엇인가요?",
+            "choices": [
+                "func",
+                "define",
+                "lambda",
+                "def"
+            ],
+            "answer": 4
+        },
+        {
+            "question": "JSON은 어떤 형식의 데이터 저장 방식인가요?",
+            "choices": [
+                "표 형식",
+                "텍스트 형식",
+                "키-값 구조 형식",
+                "바이너리 전용 형식"
+            ],
+            "answer": 3
+        }
+    ],
+    "best_score": null,
+    "best_correct_count": null,
+    "best_total_count": null
+}

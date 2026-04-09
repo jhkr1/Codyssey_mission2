@@ -1,4 +1,6 @@
+import json
 import sys
+from pathlib import Path
 
 # 터미널 색상을 정의하는 클래스
 class Color:
@@ -47,8 +49,12 @@ class Quiz:
 
 class QuizGame:
     def __init__(self):
-        self.quizzes = self.create_default_quizzes()
+        self.state_path = Path("state.json")
+        self.quizzes = []
         self.best_score = None
+        self.best_correct_count = None
+        self.best_total_count = None
+        self.load_state()
 
     def create_default_quizzes(self):
         return [
@@ -78,6 +84,59 @@ class QuizGame:
                 4,
             ),
         ]
+
+    def load_state(self):
+        default_quizzes = self.create_default_quizzes()
+
+        if not self.state_path.exists():
+            self.quizzes = default_quizzes
+            print("\n📂 저장 파일이 없어 기본 퀴즈 데이터를 사용합니다.")
+            return
+
+        try:
+            with self.state_path.open("r", encoding="utf-8") as file:
+                data = json.load(file)
+
+            quizzes_data = data.get("quizzes", [])
+            self.quizzes = [Quiz.from_dict(item) for item in quizzes_data]
+
+            if not self.quizzes:
+                self.quizzes = default_quizzes
+
+            self.best_score = data.get("best_score")
+            self.best_correct_count = data.get("best_correct_count")
+            self.best_total_count = data.get("best_total_count")
+
+            loaded_best_score = self.best_score if self.best_score is not None else "없음"
+            print(
+                f"\n📂 저장된 데이터를 불러왔습니다. "
+                f"(퀴즈 {len(self.quizzes)}개, 최고점수 {loaded_best_score})"
+            )
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            self.quizzes = default_quizzes
+            self.best_score = None
+            self.best_correct_count = None
+            self.best_total_count = None
+            print("\n⚠️ state.json 파일이 손상되어 기본 퀴즈 데이터로 복구합니다.")
+            self.save_state()
+        except OSError as error:
+            self.quizzes = default_quizzes
+            print(f"\n⚠️ 저장 파일을 읽는 중 오류가 발생했습니다: {error}")
+            print("기본 퀴즈 데이터로 계속 진행합니다.")
+
+    def save_state(self):
+        data = {
+            "quizzes": [quiz.to_dict() for quiz in self.quizzes],
+            "best_score": self.best_score,
+            "best_correct_count": self.best_correct_count,
+            "best_total_count": self.best_total_count,
+        }
+
+        try:
+            with self.state_path.open("w", encoding="utf-8") as file:
+                json.dump(data, file, ensure_ascii=False, indent=4)
+        except OSError as error:
+            print(Color.RED + f"\n⚠️ 데이터를 저장하는 중 오류가 발생했습니다: {error}" + Color.END)
 
     def prompt_text(self, message):
         while True:
@@ -155,10 +214,13 @@ class QuizGame:
 
         if self.best_score is None or score > self.best_score:
             self.best_score = score
+            self.best_correct_count = correct_count
+            self.best_total_count = total_count
             print(Color.GREEN + "🎉 새로운 최고 점수입니다!" + Color.END)
         else:
             print(f"현재 최고 점수는 {self.best_score}점입니다.")
         print("========================================")
+        self.save_state()
 
     def add_quiz(self):
         print("\n📌 새로운 퀴즈를 추가합니다.")
@@ -172,6 +234,7 @@ class QuizGame:
 
         answer = self.prompt_number("정답 번호 (1-4): ", 1, 4)
         self.quizzes.append(Quiz(question, choices, answer))
+        self.save_state()
 
         print(Color.GREEN + "\n✅ 퀴즈가 추가되었습니다!" + Color.END)
 
@@ -191,9 +254,10 @@ class QuizGame:
             print("\n🏆 아직 퀴즈를 푼 기록이 없습니다.")
             return
 
-        total_count = len(self.quizzes)
-        correct_count = round((self.best_score / 100) * total_count)
-        print(f"\n🏆 최고 점수: {self.best_score}점 ({total_count}문제 중 {correct_count}문제 정답)")
+        print(
+            f"\n🏆 최고 점수: {self.best_score}점 "
+            f"({self.best_total_count}문제 중 {self.best_correct_count}문제 정답)"
+        )
 
     def display_menu(self):
         print("\n\n")  # 상단 여백
@@ -239,14 +303,17 @@ class QuizGame:
                 elif choice == 4:
                     self.show_best_score()
                 elif choice == 5:
+                    self.save_state()
                     print("\n👋 프로그램을 종료합니다. 감사합니다!")
                     break
 
             except KeyboardInterrupt:
-                print("\n\n" + Color.RED + "⚠️ 프로그램이 강제 종료되었습니다. 안전하게 종료합니다." + Color.END)
+                self.save_state()
+                print("\n\n" + Color.RED + "⚠️ 프로그램이 중단되어 저장 후 안전하게 종료합니다." + Color.END)
                 sys.exit(0)
             except EOFError:
-                print("\n\n" + Color.RED + "⚠️ 입력 스트림이 끊어졌습니다. 안전하게 종료합니다." + Color.END)
+                self.save_state()
+                print("\n\n" + Color.RED + "⚠️ 입력 스트림이 끊어져 저장 후 안전하게 종료합니다." + Color.END)
                 sys.exit(0)
             except Exception as e:
                 print(Color.RED + f"\n⚠️ 알 수 없는 오류가 발생했습니다: {e}" + Color.END)
