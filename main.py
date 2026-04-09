@@ -47,6 +47,10 @@ class Quiz:
             answer=data["answer"],
         )
 
+
+class QuizAddCancelled(Exception):
+    pass
+
 class QuizGame:
     def __init__(self):
         self.state_path = Path("state.json")
@@ -158,10 +162,15 @@ class QuizGame:
         except OSError as error:
             print(Color.RED + f"\n⚠️ 데이터를 저장하는 중 오류가 발생했습니다: {error}" + Color.END)
 
-    def prompt_text(self, message):
+    def is_cancel_input(self, value):
+        return value.lower() == "esc" or value == "\x1b"
+
+    def prompt_text(self, message, allow_cancel=False):
         while True:
             try:
                 value = input(message).strip()
+                if allow_cancel and self.is_cancel_input(value):
+                    raise QuizAddCancelled
                 if not value:
                     print(Color.YELLOW + "⚠️ 입력이 비어있습니다. 다시 입력하세요." + Color.END)
                     continue
@@ -171,10 +180,12 @@ class QuizGame:
             except EOFError:
                 raise
 
-    def prompt_number(self, message, minimum, maximum):
+    def prompt_number(self, message, minimum, maximum, allow_cancel=False):
         while True:
             try:
                 value = input(message).strip()
+                if allow_cancel and self.is_cancel_input(value):
+                    raise QuizAddCancelled
                 if not value:
                     print(
                         Color.YELLOW
@@ -244,19 +255,23 @@ class QuizGame:
 
     def add_quiz(self):
         print("\n📌 새로운 퀴즈를 추가합니다.")
+        print("입력 중 언제든지 `esc`를 입력하면 퀴즈 추가를 취소할 수 있습니다.")
 
-        question = self.prompt_text("문제를 입력하세요: ")
-        choices = []
+        try:
+            question = self.prompt_text("문제를 입력하세요: ", allow_cancel=True)
+            choices = []
 
-        for index in range(1, 5):
-            choice = self.prompt_text(f"선택지 {index}: ")
-            choices.append(choice)
+            for index in range(1, 5):
+                choice = self.prompt_text(f"선택지 {index}: ", allow_cancel=True)
+                choices.append(choice)
 
-        answer = self.prompt_number("정답 번호 (1-4): ", 1, 4)
-        self.quizzes.append(Quiz(question, choices, answer))
-        self.save_state()
+            answer = self.prompt_number("정답 번호 (1-4): ", 1, 4, allow_cancel=True)
+            self.quizzes.append(Quiz(question, choices, answer))
+            self.save_state()
 
-        print(Color.GREEN + "\n✅ 퀴즈가 추가되었습니다!" + Color.END)
+            print(Color.GREEN + "\n✅ 퀴즈가 추가되었습니다!" + Color.END)
+        except QuizAddCancelled:
+            print(Color.YELLOW + "\n↩️ 퀴즈 추가를 취소하고 메뉴로 돌아갑니다." + Color.END)
 
     def show_quizzes(self):
         if not self.quizzes:
@@ -272,6 +287,10 @@ class QuizGame:
     def show_best_score(self):
         if self.best_score is None:
             print("\n🏆 아직 퀴즈를 푼 기록이 없습니다.")
+            return
+
+        if self.best_correct_count is None or self.best_total_count is None:
+            print(f"\n🏆 최고 점수: {self.best_score}점")
             return
 
         print(
