@@ -1,5 +1,8 @@
 from quiz_app.colors import Color
-from quiz_app.exceptions import QuizAddCancelled
+
+
+class QuizAddCancelled(Exception):
+    """사용자가 입력 도중 `esc`로 현재 작업을 취소했을 때 사용하는 예외."""
 
 
 class InputHandler:

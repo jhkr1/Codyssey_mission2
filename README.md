@@ -84,7 +84,6 @@ python3 main.py
 - 퀴즈 모델: `quiz_app/models.py`
 - 기본 퀴즈 데이터: `quiz_app/default_data.py`
 - 저장과 복구: `quiz_app/storage.py`
-- 사용자 정의 예외: `quiz_app/exceptions.py`
 - 패키지 공개 진입점: `quiz_app/__init__.py`
 
 이렇게 나누는 이유는 다음과 같다.
@@ -105,7 +104,6 @@ Codyssey_mission2/
     ├── __init__.py
     ├── colors.py
     ├── default_data.py
-    ├── exceptions.py
     ├── game.py
     ├── input_handler.py
     ├── models.py
@@ -149,6 +147,8 @@ Codyssey_mission2/
 - `esc` 취소 처리
 
 이 파일을 따로 둔 이유는 같은 입력 검증 로직이 여러 기능에서 반복되기 때문이다.
+또한 `QuizAddCancelled` 예외도 여기 함께 두었다. 이 예외는 입력 취소 흐름에서만
+사용되므로, 입력 처리 모듈 안에 두는 편이 파일 수를 줄이고 역할도 더 분명해진다.
 
 ### 8-4. `quiz_app/ui.py`
 
@@ -182,16 +182,11 @@ Codyssey_mission2/
 - 손상 시 복구
 - 현재 상태 저장
 
-### 8-8. `quiz_app/exceptions.py`
-
-사용자 정의 예외를 담는다.  
-지금은 `QuizAddCancelled`를 사용해 퀴즈 추가 도중 취소 흐름을 분리했다.
-
-### 8-9. `quiz_app/colors.py`
+### 8-8. `quiz_app/colors.py`
 
 콘솔 화면에 사용할 ANSI 색상 코드를 상수로 관리한다.
 
-### 8-10. `quiz_app/__init__.py`
+### 8-9. `quiz_app/__init__.py`
 
 이 파일은 단순히 "비어 있는 파일"이 아니라 패키지의 공개 진입점을 정리하는 역할을 한다.
 
@@ -203,7 +198,132 @@ Codyssey_mission2/
 
 즉 `__init__.py`는 "이 패키지는 무엇을 외부에 보여 줄 것인가"를 정리하는 파일이라고 이해하면 된다.
 
-## 9. 왜 예외 처리가 필요한가
+## 9. import 문을 왜 이렇게 썼는가
+
+Python 프로그램은 한 파일에 모든 코드를 몰아넣지 않고, 필요한 기능을 다른 파일에서 가져와 사용할 수 있다.  
+이때 사용하는 문법이 `import`다.
+
+이 프로젝트를 제대로 이해하려면 아래 세 가지를 알아야 한다.
+
+- `import`는 무엇을 하는가
+- `from ... import ...`는 무엇을 하는가
+- 왜 이 프로젝트에서 특정 파일을 특정 방식으로 가져오는가
+
+### 9-1. `import json`
+
+예:
+
+```python
+import json
+```
+
+의미:
+
+- Python 표준 라이브러리 안의 `json` 모듈을 가져온다.
+- JSON 문자열을 Python 데이터로 바꾸거나, Python 데이터를 JSON으로 저장할 때 사용한다.
+
+왜 필요한가:
+
+- `state.json` 파일을 읽을 때 `json.load()`가 필요하다.
+- `state.json` 파일을 저장할 때 `json.dump()`가 필요하다.
+
+즉 이 줄은 "프로젝트의 영속성 기능"을 만들기 위한 핵심 import다.
+
+### 9-2. `from quiz_app.default_data import create_default_quizzes`
+
+예:
+
+```python
+from quiz_app.default_data import create_default_quizzes
+```
+
+의미:
+
+- `quiz_app/default_data.py` 파일 안에 있는 `create_default_quizzes` 함수만 직접 가져온다.
+
+왜 이렇게 썼는가:
+
+- 저장 파일이 없을 때 기본 퀴즈를 만들어야 하기 때문이다.
+- 저장 파일이 손상되었을 때 복구용 기본 데이터를 써야 하기 때문이다.
+- 파일 전체를 통째로 참조하기보다, 필요한 함수만 가져오면 코드 의도가 더 분명해진다.
+
+즉 이 import는 "기본 데이터 생성 책임은 `default_data.py`에 있다"는 구조를 보여 준다.
+
+### 9-3. `from quiz_app.models import Quiz`
+
+예:
+
+```python
+from quiz_app.models import Quiz
+```
+
+의미:
+
+- `quiz_app/models.py` 파일 안에 정의된 `Quiz` 클래스를 가져온다.
+
+왜 필요한가:
+
+- 기본 퀴즈를 만들 때 `Quiz(...)` 객체를 생성해야 한다.
+- 저장된 딕셔너리 데이터를 다시 `Quiz` 객체로 복원해야 한다.
+- 게임 로직 안에서는 단순 문자열 묶음이 아니라 "퀴즈라는 객체"를 다뤄야 하기 때문이다.
+
+즉 이 import는 "퀴즈를 하나의 독립된 모델 객체로 다룬다"는 설계를 보여 준다.
+
+### 9-4. `from quiz_app import QuizGame`
+
+예:
+
+```python
+from quiz_app import QuizGame
+```
+
+의미:
+
+- `quiz_app/__init__.py`가 외부에 공개한 `QuizGame`을 가져온다.
+
+왜 이렇게 썼는가:
+
+- `main.py`가 내부 파일 구조를 모두 알 필요 없게 하기 위해서다.
+- 나중에 `QuizGame`의 실제 위치가 바뀌어도 `main.py`는 그대로 둘 수 있다.
+- 패키지 바깥에서는 "퀴즈 게임의 시작 객체는 `QuizGame`이다"만 알면 충분하기 때문이다.
+
+즉 이 import는 "진입점 단순화"를 위한 구조다.
+
+### 9-5. `import`와 `from ... import ...`의 차이
+
+예를 들어 아래 두 문장은 비슷하지만 사용 방식이 다르다.
+
+```python
+import json
+```
+
+```python
+from quiz_app.models import Quiz
+```
+
+차이:
+
+- `import json`: 모듈 전체를 가져온다. 사용할 때 `json.load()`처럼 모듈 이름을 붙인다.
+- `from quiz_app.models import Quiz`: 모듈 안의 특정 이름만 직접 가져온다. 사용할 때 `Quiz(...)`처럼 바로 쓸 수 있다.
+
+보통 아래 기준으로 고른다.
+
+- 모듈 전체 기능을 여러 개 쓸 때: `import module`
+- 특정 함수나 클래스 하나만 분명하게 쓸 때: `from module import name`
+
+### 9-6. 왜 import 구조도 설계의 일부인가
+
+import 문은 단순 문법이 아니라 설계 의도를 드러낸다.
+
+예를 들어:
+
+- `storage.py`가 `create_default_quizzes`를 가져온다는 것은 기본 데이터 책임이 `default_data.py`에 있다는 뜻이다.
+- `game.py`가 `InputHandler`, `ConsoleUI`, `StateStore`를 가져온다는 것은 게임 흐름이 이 도구들을 조합해 동작한다는 뜻이다.
+- `main.py`가 `QuizGame`만 가져온다는 것은 진입점이 매우 단순하다는 뜻이다.
+
+즉 import를 보면 "이 파일이 누구에게 의존하고 있는지"를 읽을 수 있다.
+
+## 10. 왜 예외 처리가 필요한가
 
 예외 처리는 "문제가 생겼을 때 프로그램이 갑자기 죽지 않게 만드는 장치"다.
 
@@ -233,12 +353,12 @@ Codyssey_mission2/
 ### 9-4. 기능 취소와 오류를 구분해야 한다
 
 퀴즈 추가 중 `esc`를 입력한 것은 오류가 아니라 "사용자의 의도적인 취소"다.  
-그래서 `QuizAddCancelled`라는 사용자 정의 예외를 따로 두어 흐름을 구분했다.
+그래서 `QuizAddCancelled`라는 사용자 정의 예외를 두어 흐름을 구분했다.
 
 퀴즈 삭제 중 `esc`를 입력한 경우도 같은 예외를 재사용한다.  
 즉 이 예외는 "퀴즈 편집 흐름을 사용자가 취소했다"는 의미로 볼 수 있다.
 
-## 10. 이 프로젝트에서 실제로 처리하는 예외
+## 11. 이 프로젝트에서 실제로 처리하는 예외
 
 - `KeyboardInterrupt`
 - `EOFError`
@@ -258,9 +378,9 @@ Codyssey_mission2/
 - `TypeError`: 데이터 타입이 예상과 다름
 - `KeyError`: 필요한 키가 없음
 - `OSError`: 파일 읽기/쓰기 실패
-- `QuizAddCancelled`: 사용자가 퀴즈 추가를 취소함
+- `QuizAddCancelled`: 사용자가 퀴즈 추가 또는 삭제를 취소함
 
-## 11. `state.json`이 다시 복구되는 이유
+## 12. `state.json`이 다시 복구되는 이유
 
 `state.json`을 지웠거나 잘못 수정했는데 프로그램을 다시 실행하면 원래처럼 보이는 이유는 저장소 로직 때문이다.
 
@@ -277,7 +397,7 @@ Codyssey_mission2/
 - 실행 전에 JSON 형식을 깨뜨리면: 손상된 파일로 판단하고 복구한다.
 - 실행 중에 직접 파일을 바꾸면: 종료 시 메모리 상태가 다시 저장되며 수정이 덮어씌워질 수 있다.
 
-## 12. 이 프로젝트에서 사용한 주요 방법
+## 13. 이 프로젝트에서 사용한 주요 방법
 
 ### 12-1. 클래스 분리
 
@@ -342,7 +462,7 @@ Codyssey_mission2/
 
 입력 도중 `esc`를 입력하면 삭제를 취소하고 메뉴로 돌아간다.
 
-## 13. Python 이론 정리
+## 14. Python 이론 정리
 
 ### 13-1. 변수
 
@@ -414,7 +534,27 @@ quiz = Quiz("파이썬의 창시자는 누구인가요?", ["귀도", "리누스"
 - `Quiz.to_dict()`가 직렬화에 사용된다.
 - `Quiz.from_dict()`가 역직렬화에 사용된다.
 
-## 14. Git 관점에서 보는 이 프로젝트
+### 14-9. 모듈과 패키지
+
+이 프로젝트는 Python의 모듈과 패키지 개념을 실제로 사용한다.
+
+- 모듈: Python 코드가 들어 있는 하나의 `.py` 파일
+- 패키지: 여러 모듈을 담고 있는 디렉터리
+
+여기서:
+
+- `quiz_app/game.py`는 모듈
+- `quiz_app/storage.py`는 모듈
+- `quiz_app` 디렉터리는 패키지
+
+모듈과 패키지를 쓰는 이유:
+
+- 역할을 나누기 위해
+- 코드를 더 읽기 쉽게 만들기 위해
+- 재사용을 쉽게 만들기 위해
+- 의존 관계를 분명하게 만들기 위해
+
+## 15. Git 관점에서 보는 이 프로젝트
 
 이 프로젝트는 기능 단위로 커밋하고, 브랜치를 나눠 작업한 뒤 병합하는 흐름을 경험하도록 설계되었다.
 
@@ -435,7 +575,7 @@ quiz = Quiz("파이썬의 창시자는 누구인가요?", ["귀도", "리누스"
 - 원격 저장소와 동기화할 수 있고
 - 브랜치 기반 개발을 경험할 수 있다
 
-## 15. 이 README를 읽고 나서 이해해야 하는 것
+## 16. 이 README를 읽고 나서 이해해야 하는 것
 
 이 README의 목표는 "이 코드가 어떻게 돌아가는지"뿐 아니라 "왜 이렇게 구성했는지"까지 설명하는 것이다.
 
@@ -446,10 +586,11 @@ quiz = Quiz("파이썬의 창시자는 누구인가요?", ["귀도", "리누스"
 - 왜 저장 로직을 별도 파일로 분리했는가
 - 왜 예외 처리가 필요한가
 - 왜 `__init__.py`가 존재하는가
+- 왜 `import json`, `from ... import ...` 같은 문장을 그렇게 썼는가
 - 왜 `state.json`이 자동 복구되는가
 - 왜 클래스와 메서드로 역할을 나눴는가
 
-## 16. 마무리
+## 17. 마무리
 
 이 프로젝트는 작은 콘솔 프로그램이지만 실제 소프트웨어 개발의 핵심 요소를 모두 담고 있다.
 

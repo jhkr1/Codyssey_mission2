@@ -27,7 +27,7 @@ class Quiz:
             "answer": self.answer,
         }
 
-    @classmethod
+    @classmethod # 클래스 기준으로 호출되는 메서드 -> 클래스에서 객체를 만들어내는 보조 생성 메서드
     def from_dict(cls, data):
         """저장된 딕셔너리 데이터를 다시 Quiz 객체로 복원한다."""
         return cls(

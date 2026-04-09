@@ -1,8 +1,7 @@
 import sys
 from pathlib import Path
 
-from quiz_app.exceptions import QuizAddCancelled
-from quiz_app.input_handler import InputHandler
+from quiz_app.input_handler import InputHandler, QuizAddCancelled
 from quiz_app.models import Quiz
 from quiz_app.storage import StateStore
 from quiz_app.ui import ConsoleUI
