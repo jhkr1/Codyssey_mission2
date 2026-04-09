@@ -85,12 +85,30 @@ class QuizGame:
             ),
         ]
 
+    def validate_quiz_data(self, item):
+        if not isinstance(item, dict):
+            raise ValueError("퀴즈 항목 형식이 올바르지 않습니다.")
+
+        question = item.get("question")
+        choices = item.get("choices")
+        answer = item.get("answer")
+
+        if not isinstance(question, str) or not question.strip():
+            raise ValueError("문제 데이터가 올바르지 않습니다.")
+        if not isinstance(choices, list) or len(choices) != 4:
+            raise ValueError("선택지 데이터가 올바르지 않습니다.")
+        if not all(isinstance(choice, str) and choice.strip() for choice in choices):
+            raise ValueError("선택지 데이터가 올바르지 않습니다.")
+        if not isinstance(answer, int) or answer < 1 or answer > 4:
+            raise ValueError("정답 데이터가 올바르지 않습니다.")
+
     def load_state(self):
         default_quizzes = self.create_default_quizzes()
 
         if not self.state_path.exists():
             self.quizzes = default_quizzes
             print("\n📂 저장 파일이 없어 기본 퀴즈 데이터를 사용합니다.")
+            self.save_state()
             return
 
         try:
@@ -98,6 +116,8 @@ class QuizGame:
                 data = json.load(file)
 
             quizzes_data = data.get("quizzes", [])
+            for item in quizzes_data:
+                self.validate_quiz_data(item)
             self.quizzes = [Quiz.from_dict(item) for item in quizzes_data]
 
             if not self.quizzes:
