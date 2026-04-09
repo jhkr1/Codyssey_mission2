@@ -13,10 +13,71 @@ class Color:
     UNDERLINE = '\033[4m'
     END = '\033[0m'
 
+class Quiz:
+    def __init__(self, question, choices, answer):
+        self.question = question
+        self.choices = choices
+        self.answer = answer
+
+    def display(self, number=None):
+        if number is not None:
+            print(f"\n[문제 {number}]")
+        print(self.question)
+        print()
+        for index, choice in enumerate(self.choices, start=1):
+            print(f"{index}. {choice}")
+
+    def is_correct(self, user_answer):
+        return user_answer == self.answer
+
+    def to_dict(self):
+        return {
+            "question": self.question,
+            "choices": self.choices,
+            "answer": self.answer,
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            question=data["question"],
+            choices=data["choices"],
+            answer=data["answer"],
+        )
+
 class QuizGame:
     def __init__(self):
-        # 나중에 파일 불러오기(state.json) 로직이 이곳에 추가될 예정입니다.
-        pass
+        self.quizzes = self.create_default_quizzes()
+        self.best_score = None
+
+    def create_default_quizzes(self):
+        return [
+            Quiz(
+                "파이썬의 창시자는 누구인가요?",
+                ["귀도 반 로섬", "리누스 토르발스", "제임스 고슬링", "브렌던 아이크"],
+                1,
+            ),
+            Quiz(
+                "파이썬에서 리스트를 만들 때 사용하는 기호는 무엇인가요?",
+                ["()", "{}", "[]", "<>"],
+                3,
+            ),
+            Quiz(
+                "조건이 참일 때만 코드를 실행할 때 사용하는 키워드는 무엇인가요?",
+                ["for", "while", "if", "def"],
+                3,
+            ),
+            Quiz(
+                "반복문으로 리스트의 모든 요소를 순회할 때 가장 자주 사용하는 문장은 무엇인가요?",
+                ["if", "for", "class", "import"],
+                2,
+            ),
+            Quiz(
+                "파이썬에서 함수를 정의할 때 사용하는 키워드는 무엇인가요?",
+                ["func", "define", "lambda", "def"],
+                4,
+            ),
+        ]
 
     def display_menu(self):
         print("\n\n")  # 상단 여백
@@ -54,13 +115,19 @@ class QuizGame:
 
                 # 정상적인 메뉴 선택 흐름
                 if choice == 1:
-                    print("\n📝 [퀴즈 풀기] 기능은 곧 구현됩니다!")
+                    print(f"\n📝 현재 등록된 퀴즈는 총 {len(self.quizzes)}개입니다.")
+                    print("퀴즈 풀기 기능은 다음 단계에서 구현합니다!")
                 elif choice == 2:
                     print("\n📌 [퀴즈 추가] 기능은 곧 구현됩니다!")
                 elif choice == 3:
-                    print("\n📋 [퀴즈 목록] 기능은 곧 구현됩니다!")
+                    print("\n📋 현재 기본 퀴즈 목록")
+                    for index, quiz in enumerate(self.quizzes, start=1):
+                        print(f"{index}. {quiz.question}")
                 elif choice == 4:
-                    print("\n🏆 [점수 확인] 기능은 곧 구현됩니다!")
+                    if self.best_score is None:
+                        print("\n🏆 아직 저장된 최고 점수가 없습니다.")
+                    else:
+                        print(f"\n🏆 현재 최고 점수: {self.best_score}")
                 elif choice == 5:
                     print("\n👋 프로그램을 종료합니다. 감사합니다!")
                     break
