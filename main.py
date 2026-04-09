@@ -79,6 +79,74 @@ class QuizGame:
             ),
         ]
 
+    def prompt_number(self, message, minimum, maximum):
+        while True:
+            try:
+                value = input(message).strip()
+                if not value:
+                    print(
+                        Color.YELLOW
+                        + f"⚠️ 입력이 비어있습니다. {minimum}-{maximum} 사이의 숫자를 입력하세요."
+                        + Color.END
+                    )
+                    continue
+                if not value.isdigit():
+                    print(
+                        Color.YELLOW
+                        + f"⚠️ 잘못된 입력입니다. {minimum}-{maximum} 사이의 숫자를 입력하세요."
+                        + Color.END
+                    )
+                    continue
+
+                number = int(value)
+                if number < minimum or number > maximum:
+                    print(
+                        Color.YELLOW
+                        + f"⚠️ 잘못된 입력입니다. {minimum}-{maximum} 사이의 숫자를 입력하세요."
+                        + Color.END
+                    )
+                    continue
+                return number
+            except KeyboardInterrupt:
+                raise
+            except EOFError:
+                raise
+
+    def play_quiz(self):
+        if not self.quizzes:
+            print("\n📭 등록된 퀴즈가 없어 게임을 시작할 수 없습니다.")
+            return
+
+        correct_count = 0
+        total_count = len(self.quizzes)
+
+        print(f"\n📝 퀴즈를 시작합니다! (총 {total_count}문제)")
+
+        for index, quiz in enumerate(self.quizzes, start=1):
+            print("\n----------------------------------------")
+            quiz.display(index)
+            user_answer = self.prompt_number("\n정답 입력 (1-4): ", 1, 4)
+
+            if quiz.is_correct(user_answer):
+                correct_count += 1
+                print(Color.GREEN + "✅ 정답입니다!" + Color.END)
+            else:
+                correct_choice = quiz.choices[quiz.answer - 1]
+                print(Color.RED + "❌ 오답입니다." + Color.END)
+                print(f"정답은 {quiz.answer}번: {correct_choice}")
+
+        score = int((correct_count / total_count) * 100)
+
+        print("\n========================================")
+        print(f"🏆 결과: {total_count}문제 중 {correct_count}문제 정답! ({score}점)")
+
+        if self.best_score is None or score > self.best_score:
+            self.best_score = score
+            print(Color.GREEN + "🎉 새로운 최고 점수입니다!" + Color.END)
+        else:
+            print(f"현재 최고 점수는 {self.best_score}점입니다.")
+        print("========================================")
+
     def display_menu(self):
         print("\n\n")  # 상단 여백
         print(Color.CYAN + "========================================" + Color.END)
@@ -115,8 +183,7 @@ class QuizGame:
 
                 # 정상적인 메뉴 선택 흐름
                 if choice == 1:
-                    print(f"\n📝 현재 등록된 퀴즈는 총 {len(self.quizzes)}개입니다.")
-                    print("퀴즈 풀기 기능은 다음 단계에서 구현합니다!")
+                    self.play_quiz()
                 elif choice == 2:
                     print("\n📌 [퀴즈 추가] 기능은 곧 구현됩니다!")
                 elif choice == 3:
