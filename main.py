@@ -79,6 +79,19 @@ class QuizGame:
             ),
         ]
 
+    def prompt_text(self, message):
+        while True:
+            try:
+                value = input(message).strip()
+                if not value:
+                    print(Color.YELLOW + "⚠️ 입력이 비어있습니다. 다시 입력하세요." + Color.END)
+                    continue
+                return value
+            except KeyboardInterrupt:
+                raise
+            except EOFError:
+                raise
+
     def prompt_number(self, message, minimum, maximum):
         while True:
             try:
@@ -147,6 +160,41 @@ class QuizGame:
             print(f"현재 최고 점수는 {self.best_score}점입니다.")
         print("========================================")
 
+    def add_quiz(self):
+        print("\n📌 새로운 퀴즈를 추가합니다.")
+
+        question = self.prompt_text("문제를 입력하세요: ")
+        choices = []
+
+        for index in range(1, 5):
+            choice = self.prompt_text(f"선택지 {index}: ")
+            choices.append(choice)
+
+        answer = self.prompt_number("정답 번호 (1-4): ", 1, 4)
+        self.quizzes.append(Quiz(question, choices, answer))
+
+        print(Color.GREEN + "\n✅ 퀴즈가 추가되었습니다!" + Color.END)
+
+    def show_quizzes(self):
+        if not self.quizzes:
+            print("\n📭 등록된 퀴즈가 없습니다.")
+            return
+
+        print(f"\n📋 등록된 퀴즈 목록 (총 {len(self.quizzes)}개)")
+        print("----------------------------------------")
+        for index, quiz in enumerate(self.quizzes, start=1):
+            print(f"[{index}] {quiz.question}")
+        print("----------------------------------------")
+
+    def show_best_score(self):
+        if self.best_score is None:
+            print("\n🏆 아직 퀴즈를 푼 기록이 없습니다.")
+            return
+
+        total_count = len(self.quizzes)
+        correct_count = round((self.best_score / 100) * total_count)
+        print(f"\n🏆 최고 점수: {self.best_score}점 ({total_count}문제 중 {correct_count}문제 정답)")
+
     def display_menu(self):
         print("\n\n")  # 상단 여백
         print(Color.CYAN + "========================================" + Color.END)
@@ -185,16 +233,11 @@ class QuizGame:
                 if choice == 1:
                     self.play_quiz()
                 elif choice == 2:
-                    print("\n📌 [퀴즈 추가] 기능은 곧 구현됩니다!")
+                    self.add_quiz()
                 elif choice == 3:
-                    print("\n📋 현재 기본 퀴즈 목록")
-                    for index, quiz in enumerate(self.quizzes, start=1):
-                        print(f"{index}. {quiz.question}")
+                    self.show_quizzes()
                 elif choice == 4:
-                    if self.best_score is None:
-                        print("\n🏆 아직 저장된 최고 점수가 없습니다.")
-                    else:
-                        print(f"\n🏆 현재 최고 점수: {self.best_score}")
+                    self.show_best_score()
                 elif choice == 5:
                     print("\n👋 프로그램을 종료합니다. 감사합니다!")
                     break
