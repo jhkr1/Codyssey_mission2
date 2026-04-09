@@ -27,7 +27,8 @@ class ConsoleUI:
         print("  " + Color.BLUE + "2." + Color.END + " 퀴즈 추가   " + Color.GREEN + "(Add)" + Color.END)
         print("  " + Color.BLUE + "3." + Color.END + " 퀴즈 목록   " + Color.GREEN + "(List)" + Color.END)
         print("  " + Color.BLUE + "4." + Color.END + " 점수 확인   " + Color.GREEN + "(History)" + Color.END)
-        print("  " + Color.RED + "5." + Color.END + " 종료        " + Color.RED + "(Exit)" + Color.END)
+        print("  " + Color.BLUE + "5." + Color.END + " 퀴즈 삭제   " + Color.GREEN + "(Delete)" + Color.END)
+        print("  " + Color.RED + "6." + Color.END + " 종료        " + Color.RED + "(Exit)" + Color.END)
         print(Color.CYAN + "========================================" + Color.END)
         print("\n" + Color.BOLD + Color.YELLOW + "  👉 원하는 메뉴 번호를 입력하세요." + Color.END + "\n")
 
@@ -86,6 +87,19 @@ class ConsoleUI:
         for index, quiz in enumerate(quizzes, start=1):
             print(f"[{index}] {quiz.question}")
         print("----------------------------------------")
+
+    def show_delete_quiz_intro(self):
+        """퀴즈 삭제 시작 안내 문구를 출력한다."""
+        print("\n🗑️ 삭제할 퀴즈를 선택합니다.")
+        print("입력 중 언제든지 `esc`를 입력하면 삭제를 취소할 수 있습니다.")
+
+    def show_quiz_deleted(self, deleted_question):
+        """퀴즈가 삭제되었을 때 삭제된 문제를 함께 알려준다."""
+        print(Color.GREEN + f"\n✅ 퀴즈가 삭제되었습니다: {deleted_question}" + Color.END)
+
+    def show_delete_quiz_cancelled(self):
+        """퀴즈 삭제가 취소되었을 때 출력한다."""
+        print(Color.YELLOW + "\n↩️ 퀴즈 삭제를 취소하고 메뉴로 돌아갑니다." + Color.END)
 
     def show_no_score(self):
         """플레이 기록이 없을 때 출력한다."""

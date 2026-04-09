@@ -118,6 +118,28 @@ class QuizGame:
 
         self.ui.show_quiz_list(self.quizzes)
 
+    def delete_quiz(self):
+        """사용자가 고른 번호의 퀴즈를 삭제하고 즉시 저장한다."""
+        if not self.quizzes:
+            self.ui.show_empty_quiz_list()
+            return
+
+        self.ui.show_delete_quiz_intro()
+        self.ui.show_quiz_list(self.quizzes)
+
+        try:
+            delete_index = self.input_handler.prompt_number(
+                "삭제할 퀴즈 번호를 입력하세요: ",
+                1,
+                len(self.quizzes),
+                allow_cancel=True,
+            )
+            deleted_quiz = self.quizzes.pop(delete_index - 1)
+            self.save_state()
+            self.ui.show_quiz_deleted(deleted_quiz.question)
+        except QuizAddCancelled:
+            self.ui.show_delete_quiz_cancelled()
+
     def show_best_score(self):
         """저장된 최고 점수를 사람이 읽기 쉬운 형식으로 보여 준다."""
         if self.best_score is None:
@@ -149,6 +171,8 @@ class QuizGame:
         elif choice == 4:
             self.show_best_score()
         elif choice == 5:
+            self.delete_quiz()
+        elif choice == 6:
             self.save_state()
             self.ui.show_exit()
             return False
@@ -164,7 +188,7 @@ class QuizGame:
         while True:
             self.display_menu()
             try:
-                choice = self.input_handler.prompt_number("선택: ", 1, 5)
+                choice = self.input_handler.prompt_number("선택: ", 1, 6)
                 should_continue = self.handle_menu_choice(choice)
                 if not should_continue:
                     break
