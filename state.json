@@ -59,9 +59,19 @@
                 "바이너리 전용 형식"
             ],
             "answer": 3
+        },
+        {
+            "question": ":ㅈㅂ",
+            "choices": [
+                "ㅂㅈ",
+                "ㅂ",
+                "ㅂ",
+                "ㅂ"
+            ],
+            "answer": 1
         }
     ],
-    "best_score": null,
-    "best_correct_count": null,
-    "best_total_count": null
+    "best_score": 100,
+    "best_correct_count": 6,
+    "best_total_count": 6
 }
