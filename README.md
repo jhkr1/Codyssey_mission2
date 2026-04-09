@@ -77,3 +77,7 @@ Codyssey_mission2/
 - `docs/screenshots/play.png`
 - `docs/screenshots/add_quiz.png`
 - `docs/screenshots/score.png`
+
+## Git 실습 메모
+
+clone 후 README를 수정하고 push한 뒤, 원본 작업 디렉터리에서 pull로 반영 여부를 확인했습니다.
