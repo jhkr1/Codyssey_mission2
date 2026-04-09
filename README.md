@@ -84,6 +84,102 @@ python3 main.py
 
 이 흐름을 이해하면 코드가 여러 파일로 나뉘어 있어도 전체 구조를 놓치지 않게 된다.
 
+### 6-1. 코드가 실제로 호출되는 순서
+
+아래는 프로그램이 시작될 때부터 종료될 때까지 실제 코드가 이어지는 순서다.
+
+1. 사용자가 터미널에서 `python3 main.py`를 실행한다.
+2. `main.py`의 `main()` 함수가 실행된다.
+3. `main.py`는 `from quiz_app import QuizGame`으로 패키지 바깥에 공개된 `QuizGame`을 가져온다.
+4. `QuizGame()` 객체를 생성한다.
+5. `QuizGame.__init__()` 안에서 아래 준비가 이루어진다.
+   - `StateStore` 객체 생성
+   - `InputHandler` 객체 생성
+   - `ConsoleUI` 객체 생성
+   - 퀴즈 목록과 점수 변수 초기화
+6. `QuizGame.__init__()`은 바로 `load_state()`를 호출한다.
+7. `load_state()`는 `StateStore.load()`를 호출한다.
+8. `StateStore.load()`는 아래 순서로 동작한다.
+   - `state.json`이 있는지 확인
+   - 파일이 있으면 `json.load()`로 읽기
+   - 저장된 퀴즈 데이터 형식 검사
+   - 각 퀴즈 딕셔너리를 `Quiz.from_dict()`로 `Quiz` 객체로 복원
+   - 파일이 없거나 손상되면 `create_default_quizzes()`로 기본 퀴즈 생성
+9. `load_state()`가 끝나면 `QuizGame.run()`이 호출된다.
+10. `run()`은 무한 반복 루프 안에서 `display_menu()`를 호출한다.
+11. `display_menu()`는 실제 출력 작업을 `ConsoleUI.show_menu()`에 맡긴다.
+12. 사용자가 메뉴 번호를 입력하면 `InputHandler.prompt_number()`가 입력값을 검사한다.
+13. 입력이 정상이라면 `handle_menu_choice()`가 메뉴 번호에 맞는 기능을 실행한다.
+
+메뉴별 실제 흐름은 다음과 같다.
+
+#### 퀴즈 풀기 흐름
+
+1. `handle_menu_choice(1)`이 `play_quiz()`를 호출한다.
+2. `play_quiz()`는 퀴즈가 있는지 먼저 확인한다.
+3. 각 퀴즈를 순회하며 `quiz.display()`로 문제를 보여 준다.
+4. 정답 입력은 `InputHandler.prompt_number()`가 처리한다.
+5. 정답 판별은 `quiz.is_correct()`가 담당한다.
+6. 결과 출력은 `ConsoleUI.show_correct_answer()` 또는 `ConsoleUI.show_wrong_answer()`가 담당한다.
+7. 모든 문제가 끝나면 점수를 계산한다.
+8. 최고 점수 갱신 여부를 판단한다.
+9. `ConsoleUI.show_quiz_result()`로 결과를 출력한다.
+10. `save_state()`를 호출해 변경된 점수를 저장한다.
+
+#### 퀴즈 추가 흐름
+
+1. `handle_menu_choice(2)`가 `add_quiz()`를 호출한다.
+2. `ConsoleUI.show_add_quiz_intro()`가 안내 문구를 출력한다.
+3. 문제와 선택지 입력은 `InputHandler.prompt_text()`가 처리한다.
+4. 정답 번호 입력은 `InputHandler.prompt_number()`가 처리한다.
+5. 입력 도중 `esc`가 들어오면 `QuizAddCancelled` 예외가 발생한다.
+6. 예외가 발생하면 취소 메시지를 보여 주고 메뉴로 돌아간다.
+7. 정상 입력이면 `Quiz` 객체를 새로 만들어 `self.quizzes`에 추가한다.
+8. `save_state()`를 호출해 즉시 파일에 저장한다.
+
+#### 퀴즈 목록 흐름
+
+1. `handle_menu_choice(3)`이 `show_quizzes()`를 호출한다.
+2. 퀴즈가 비어 있으면 빈 목록 메시지를 출력한다.
+3. 퀴즈가 있으면 `ConsoleUI.show_quiz_list()`가 문제 제목만 출력한다.
+
+#### 점수 확인 흐름
+
+1. `handle_menu_choice(4)`가 `show_best_score()`를 호출한다.
+2. 플레이 기록이 없으면 기록 없음 메시지를 출력한다.
+3. 기록이 있으면 최고 점수와 정답 개수 정보를 출력한다.
+
+#### 퀴즈 삭제 흐름
+
+1. `handle_menu_choice(5)`가 `delete_quiz()`를 호출한다.
+2. 삭제 가능한 퀴즈 목록을 먼저 보여 준다.
+3. `InputHandler.prompt_number()`로 삭제 번호를 입력받는다.
+4. 입력 도중 `esc`가 들어오면 취소 예외를 발생시킨다.
+5. 정상 입력이면 해당 번호의 퀴즈를 리스트에서 제거한다.
+6. `save_state()`를 호출해 삭제 결과를 바로 저장한다.
+7. 삭제 완료 메시지를 출력한다.
+
+#### 종료 흐름
+
+1. `handle_menu_choice(6)`이 종료 분기로 들어간다.
+2. `save_state()`로 현재 상태를 마지막으로 저장한다.
+3. `ConsoleUI.show_exit()`로 종료 메시지를 출력한다.
+4. `run()`의 반복 루프를 종료한다.
+
+### 6-2. 예외가 끼어드는 위치
+
+코드 흐름은 항상 정상 입력만 가정하지 않는다.  
+아래 예외 상황에서는 흐름이 잠시 우회한다.
+
+- 숫자 입력이 필요한데 문자를 입력하면: `InputHandler.prompt_number()`가 다시 입력을 요구한다.
+- 빈 입력이면: 입력 메서드가 다시 입력을 요구한다.
+- `esc`를 입력하면: `QuizAddCancelled` 예외가 발생하고 추가/삭제 흐름이 취소된다.
+- `Ctrl + C`가 발생하면: `run()`에서 잡아서 저장 후 종료한다.
+- `EOFError`가 발생하면: `run()`에서 잡아서 저장 후 종료한다.
+- `state.json`이 손상되면: `StateStore.load()`가 기본 퀴즈로 복구한다.
+
+즉 이 프로젝트의 코드는 "정상 흐름"과 "예외 흐름"을 함께 고려해서 설계되어 있다.
+
 ## 7. 왜 코드를 여러 파일로 나눴는가
 
 처음에는 모든 코드를 `main.py`에 작성할 수 있다.  
